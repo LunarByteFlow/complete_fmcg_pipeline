@@ -1,0 +1,33 @@
+bundle:
+  name: fmcg_data_lakehouse
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://<your-databricks-instance>.cloud.databricks.com
+
+resources:
+  jobs:
+    fmcg_orders_medallion_job:
+      name: "FMCG Orders Medallion Pipeline Run"
+      
+      tasks:
+        - task_key: silver_orders_processing
+          spark_python_task:
+            python_file: "src/pipelines/run_silver_orders.py"
+          environment_key: default
+
+        - task_key: gold_fact_processing
+          depends_on:
+            - task_key: silver_orders_processing
+          spark_python_task:
+            python_file: "src/pipelines/run_gold_pipeline.py"
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "13.3.x-scala2.12"
+            spark_version: "13.3.x-scala2.12"

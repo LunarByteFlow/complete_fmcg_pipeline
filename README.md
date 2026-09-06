@@ -6,7 +6,7 @@
 ![Delta Lake](https://img.shields.io/badge/Delta_Lake-3.0-blue)
 ![Python](https://img.shields.io/badge/Python-3.10+-yellow?logo=python)
 
-An end-to-end, modular PySpark Data Lakehouse pipeline designed for Fast-Moving Consumer Goods (FMCG) analytics. Built on Databricks using a multi-hop Medallion Architecture (Bronze → Silver → Gold), featuring stateful incremental ingestion via Databricks Auto Loader, dynamic dynamic schema evolution, Dead-Letter Queue (DLQ) quarantine routing, Kimball Star Schema modeling, and automated CI/CD unit testing via GitHub Actions and PyTest.
+An end-to-end, modular PySpark Data Lakehouse pipeline designed for Fast-Moving Consumer Goods (FMCG) analytics. Built on Databricks using a multi-hop Medallion Architecture (Bronze → Silver → Gold), featuring stateful incremental ingestion via Databricks Auto Loader, dynamic schema evolution, Dead-Letter Queue (DLQ) quarantine routing, Kimball Star Schema modeling, and automated CI/CD unit testing via GitHub Actions and PyTest.
 
 ---
 

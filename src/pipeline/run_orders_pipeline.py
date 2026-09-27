@@ -52,7 +52,7 @@ def merge_to_delta(
             logging.info(f"Initializing target table: {target_table_name}")
             writer = df.write.format("delta").mode("append").option("mergeSchema", "true")
             writer.saveAsTable(target_table_name)
-            
+
             # Apply Liquid Clustering on initial creation if supported/configured
             if cluster_keys:
                 cluster_str = ", ".join(cluster_keys)
@@ -68,7 +68,7 @@ def merge_to_delta(
                 .execute()
             )
             logging.info(f"Successfully merged data into {target_table_name}")
-            
+
     except Exception as e:
         logging.error(f"Failed to merge into {target_table_name}: {str(e)}")
         raise e
@@ -94,16 +94,26 @@ def run_silver_pipeline():
     clean_df = base_df.filter(col("is_valid_customer") == True).drop("is_valid_customer")
     quarantine_df = base_df.filter(col("is_valid_customer") == False).drop("is_valid_customer")
 
-    # Deterministic Deduplication over business keys using ingestion timestamp
-    dedup_keys = ["order_id", "order_placement_date"]
-    ts_col = "ingested_timestamp" if "ingested_timestamp" in base_df.columns else "order_placement_date"
+    # Deterministic Deduplication over the TRUE business grain: an order can
+    # contain multiple product lines, so product_code must be part of the key
+    # -- otherwise legitimate multi-product orders and true duplicates look
+    # identical to this window function. Order by read_timestamp (the real
+    # ingestion time column that actually exists on this data) rather than
+    # order_placement_date, since ordering by a column that's also a
+    # partition key is meaningless -- every row in a group shares that value.
+    dedup_keys = ["order_id", "order_placement_date", "product_code"]
+    ts_col = "read_timestamp" if "read_timestamp" in base_df.columns else "order_placement_date"
 
     clean_records = deduplicate_source(clean_df, keys=dedup_keys, order_by_col=ts_col)
     quarantine_records = deduplicate_source(quarantine_df, keys=dedup_keys, order_by_col=ts_col)
 
+    # Join condition must match the same grain as the dedup keys above --
+    # missing product_code here previously caused every product line under
+    # the same order_id/date to be treated as "the same row" during MERGE.
     join_cond = (
         "target.order_id = source.order_id AND "
-        "target.order_placement_date = source.order_placement_date"
+        "target.order_placement_date = source.order_placement_date AND "
+        "target.product_code = source.product_code"
     )
 
     logging.info("Merging clean records into Silver...")

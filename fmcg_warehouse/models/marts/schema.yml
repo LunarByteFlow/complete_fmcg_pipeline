@@ -1,0 +1,59 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "One row per unique customer -- the customer dimension."
+    columns:
+      - name: customer_id
+        description: "Primary key -- unique identifier for a customer."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_products
+    description: "One row per unique product -- the product dimension."
+    columns:
+      - name: product_id
+        description: "Primary key -- unique identifier for a product."
+        tests:
+          - unique
+          - not_null
+
+  - name: fact_orders
+    description: >
+      One row per order LINE (order_id + product_id) -- a single order_id
+      can span multiple products, so order_id alone is not a unique key.
+    columns:
+      - name: order_line_id
+        description: "Primary key -- surrogate key of order_id + product_id, the true grain of this table."
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: "Business key -- NOT unique on its own; an order can have multiple product lines."
+        tests:
+          - not_null
+      - name: customer_id
+        description: "Foreign key to dim_customers."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: product_id
+        description: >
+          Foreign key to dim_products. Configured to WARN rather than FAIL:
+          a known, pre-existing data quality issue in the source system
+          means ~5,200 orders reference placeholder product codes
+          (88888888, 99999999) that were never valid products.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_id
+              config:
+                severity: warn
+      - name: order_qty
+        description: "Quantity ordered -- cleaning upstream already filters out non-positive values, this is a safety net."
+        tests:
+          - not_null

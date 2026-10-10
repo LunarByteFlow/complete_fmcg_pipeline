@@ -6,7 +6,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: https://<your-databricks-instance>.cloud.databricks.com
+      host: https://dbc-fbd23b57-d18b.cloud.databricks.com
 
 resources:
   jobs:
@@ -14,14 +14,14 @@ resources:
       name: "FMCG Orders Medallion Pipeline Run"
       
       tasks:
-        - task_key: silver_orders_processing
+        - task_key: run_orders_pipeline
           spark_python_task:
-            python_file: "src/pipelines/run_silver_orders.py"
+            python_file: "src/pipelines/run_orders_pipeline.py"
           environment_key: default
 
         - task_key: gold_fact_processing
           depends_on:
-            - task_key: silver_orders_processing
+            - task_key: run_orders_pipeline
           spark_python_task:
             python_file: "src/pipelines/run_gold_pipeline.py"
           environment_key: default
